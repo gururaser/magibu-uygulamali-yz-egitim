@@ -1,0 +1,1 @@
+# magibu-uygulamali-yz-egitim
