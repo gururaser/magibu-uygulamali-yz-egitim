@@ -27,7 +27,7 @@ datasets:
 
 ## 📈 Türkçe MMLU Benchmark Test Sonuçları
 
-Model, [alibayram/yapay_zeka_turkce_mmlu_bolum_sonuclari](https://huggingface.co/datasets/alibayram/yapay_zeka_turkce_mmlu_bolum_sonuclari) test seti kullanılarak Türkçe MMLU benchmark değerlendirmesine tabi tutulmuş ve taban model ile karşılaştırılmıştır:
+Model, [alibayram/yapay_zeka_turkce_mmlu_model_cevaplari](https://huggingface.co/datasets/alibayram/yapay_zeka_turkce_mmlu_model_cevaplari) test seti kullanılarak Türkçe MMLU benchmark değerlendirmesine tabi tutulmuş ve taban model ile karşılaştırılmıştır:
 
 ### 📊 Türkçe MMLU Benchmark Karşılaştırma Tablosu
 
