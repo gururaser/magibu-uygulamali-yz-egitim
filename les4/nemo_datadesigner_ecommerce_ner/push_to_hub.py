@@ -6,6 +6,7 @@ Uploads the generated JSONL dataset and creates a detailed dataset card (README.
 import argparse
 import json
 import os
+import sys
 from pathlib import Path
 from typing import Dict, Any
 
@@ -91,22 +92,48 @@ print(dataset["train"][0])
 
 def main():
     parser = argparse.ArgumentParser(description="Push E-Commerce NER dataset to Hugging Face Hub")
-    parser.add_argument("--repo-id", type=str, required=True, help="Hugging Face repo ID (e.g. username/turkish-ecommerce-ner)")
+    parser.add_argument("--repo-id", type=str, default=None, help="Hugging Face repo ID (e.g. username/turkish-ecommerce-ner-dataset)")
     parser.add_argument("--data-file", type=str, default=str(Path(__file__).parent / "data" / "ecommerce_ner_dataset.jsonl"), help="Path to .jsonl file")
     parser.add_argument("--private", action="store_true", help="Make repository private")
     args = parser.parse_args()
 
+    token = os.getenv("HF_TOKEN")
+    if not token or token == "hf_your_token_here":
+        print("\n[ERROR] HF_TOKEN is missing or contains placeholder in .env file.")
+        print("Lütfen .env dosyasındaki HF_TOKEN değerinizi kontrol edin.\n")
+        sys.exit(1)
+
+    api = HfApi(token=token)
+
+    repo_id = args.repo_id
+    if not repo_id:
+        try:
+            user_info = api.whoami()
+            username = user_info.get("name")
+            if username:
+                repo_id = f"{username}/turkish-ecommerce-ner-dataset"
+                print(f"[INFO] Auto-detected Hugging Face username: '{username}' -> Target Repo: '{repo_id}'")
+        except Exception as e:
+            print(f"[WARNING] Could not auto-detect HF username: {e}")
+
+    if not repo_id:
+        print("[ERROR] Please provide --repo-id username/dataset-name")
+        sys.exit(1)
+
     data_path = Path(args.data_file)
     if not data_path.exists():
         print(f"[ERROR] Data file {data_path} not found. Please run generate_ecommerce_ner.py first.")
-        return
+        sys.exit(1)
 
     # Count records and extract sample
     records = []
     with open(data_path, "r", encoding="utf-8") as f:
         for line in f:
             if line.strip():
-                records.append(json.loads(line))
+                try:
+                    records.append(json.loads(line))
+                except Exception:
+                    pass
 
     sample_rec = records[0] if records else {}
     total_count = len(records)
@@ -114,35 +141,31 @@ def main():
     print(f"[INFO] Prepared dataset: {total_count} records from {data_path}")
 
     # Generate README.md content
-    readme_str = generate_dataset_card_readme(args.repo_id, sample_rec, total_count)
+    readme_str = generate_dataset_card_readme(repo_id, sample_rec, total_count)
     readme_path = data_path.parent / "README.md"
     with open(readme_path, "w", encoding="utf-8") as f:
         f.write(readme_str)
 
     print(f"[INFO] Created dataset README card at {readme_path}")
 
-    # HF API upload
-    token = os.getenv("HF_TOKEN")
-    api = HfApi(token=token)
+    print(f"[INFO] Creating/verifying Hugging Face repository '{repo_id}'...")
+    create_repo(repo_id=repo_id, repo_type="dataset", private=args.private, exist_ok=True, token=token)
 
-    print(f"[INFO] Creating/verifying Hugging Face repository '{args.repo_id}'...")
-    create_repo(repo_id=args.repo_id, repo_type="dataset", private=args.private, exist_ok=True, token=token)
-
-    print(f"[INFO] Uploading dataset file and README to {args.repo_id}...")
+    print(f"[INFO] Uploading dataset file and README to {repo_id}...")
     api.upload_file(
         path_or_fileobj=str(data_path),
         path_in_repo="train.jsonl",
-        repo_id=args.repo_id,
+        repo_id=repo_id,
         repo_type="dataset",
     )
     api.upload_file(
         path_or_fileobj=str(readme_path),
         path_in_repo="README.md",
-        repo_id=args.repo_id,
+        repo_id=repo_id,
         repo_type="dataset",
     )
 
-    print(f"[SUCCESS] Dataset successfully published at: https://huggingface.co/datasets/{args.repo_id}")
+    print(f"\n[SUCCESS] Dataset successfully published at: https://huggingface.co/datasets/{repo_id}")
 
 
 if __name__ == "__main__":
