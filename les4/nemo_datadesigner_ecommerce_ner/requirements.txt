@@ -1,0 +1,6 @@
+data-designer>=0.1.0
+pandas>=2.0.0
+huggingface_hub>=0.20.0
+datasets>=2.16.0
+pydantic>=2.0.0
+tqdm>=4.66.0
