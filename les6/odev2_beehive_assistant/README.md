@@ -25,7 +25,7 @@ Durum etiketleri tıbbi/biyolojik tanı değildir. Her metrik için kaynak dağ�
 
 `app.py` Gradio 6.20 arayüzüdür. Her kullanıcı oturumu `gr.State` içinde geçici SQLite dosyası taşır ve yaşam süresi dolunca silinir. `database.py` üç tabloyu oluşturur; `data_loader.py` Kaggle CSV’sindeki 3.000 gerçek sensör satırını altı sentetik kovana deterministik olarak dağıtır. `agent.py` kovan alanındaki sorgularda ilk model isteğine `tool_choice="required"` gönderir; genel selamlaşmalarda `auto` kullanır ve en fazla dört tur sürer. `llm.py`, HF Inference Router’ın OpenAI uyumlu uç noktasına bounded timeout/retry/token ayarlarıyla bağlanır.
 
-Kullanıcı girdisi en fazla `MAX_USER_MESSAGE_CHARS=2000`; geçmiş en fazla `MAX_HISTORY_MESSAGES=20` mesaj ve mesaj başına `MAX_HISTORY_CONTENT_CHARS=2000` karakterdir. Araç döngüsü `MAX_TOOL_ROUNDS=4`, Router isteği `MAX_COMPLETION_TOKENS=512`, 30 saniye timeout ve en fazla iki retry ile sınırlıdır. Bu sınırlar public Space maliyetini ve kötüye kullanımı sınırlar.
+Kullanıcı girdisi en fazla `MAX_USER_MESSAGE_CHARS=2000`; geçmiş en fazla `MAX_HISTORY_MESSAGES=20` mesaj ve mesaj başına `MAX_HISTORY_CONTENT_CHARS=2000` karakterdir. Araç döngüsü `MAX_TOOL_ROUNDS=4`, Router isteği `MAX_COMPLETION_TOKENS=1024`, 30 saniye timeout ve en fazla iki retry ile sınırlıdır. Bu sınırlar public Space maliyetini ve kötüye kullanımı sınırlar.
 
 ## Model ve veri
 
