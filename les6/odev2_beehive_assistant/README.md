@@ -54,7 +54,15 @@ python app.py
 
 > Dikkat gerektiren kovanları bul. En riskli kovanın ayrıntılarını göster ve Kovan-3 için kraliçenin görüldüğü, varroa sayısının 3 olduğu bir kontrol kaydı oluştur.
 
-Model sırasıyla `list_hives(status="dikkat")`, `get_hive_details(hive_id="hive-3")` ve `record_inspection(hive_id="hive-3", queen_seen=true, varroa_count=3, notes="Kraliçe görüldü")` çağrılarını yapabilir. Son yazma çağrısı okuma sonucu içermese bile ekran, ters yöndeki tool günlüklerinden son `readings`/`hives` sonucunu bulup tablo ve grafiği korur. Bilinmeyen kovan, geçersiz varroa/not ve DB hataları yapılandırılmış `{ "error": { "code": ..., "message": ... } }` sonucudur.
+Doğrulanmış canlı Space API akışı şu sırayı kullandı:
+
+1. `list_hives(status='dikkat')`
+2. `get_hive_details(hive_id='hive-1', reading_limit=5)`
+3. `record_inspection(hive_id='hive-3', queen_seen=true, varroa_count=3, notes='Kraliçe görüldü.')`
+
+![Canlı Space API yanıtından gerçek tool-call günlükleri](live_tool_call_screenshot.png)
+
+Bu ekran görüntüsü gerçek canlı Space API yanıtından render edilmiştir; uydurma bir tool sonucu değildir. Yazma çağrısı izole ephemeral oturumda `inspection id 1` döndürdü; kalıcı saklama iddiası yoktur. Son yazma çağrısı okuma sonucu içermese bile ekran, ters yöndeki tool günlüklerinden son `readings`/`hives` sonucunu bulup tablo ve grafiği korur. Bilinmeyen kovan, geçersiz varroa/not ve DB hataları yapılandırılmış `{ "error": { "code": ..., "message": ... } }` sonucudur.
 
 ## HF Space teslimi
 
