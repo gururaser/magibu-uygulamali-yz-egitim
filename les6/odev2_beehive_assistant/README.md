@@ -17,6 +17,8 @@ Bu klasör kendi başına çalışan bir Gradio + SQLite tool-calling uygulamas�
 
 Bu görsel, doğrulanmış ilk responsive Gradio arayüzü ekran görüntüsüdür; sahte bir tool sonucu veya uydurma terminal günlüğü değildir.
 
+HF ZeroGPU başlangıç denetimi için yalnızca `spaces` paketi mevcutsa görünmez, bir saniyelik bir no-op GPU fonksiyonu bağlanır. Gerçek sohbet ve model çağrıları uzak HF Router’da çalışır; bu no-op sohbet isteklerini GPU’ya yönlendirmez ve sohbet için GPU kotası tüketmez. Yerel `.venv` içinde `spaces` yoksa import güvenle `None` olur.
+
 Durum etiketleri tıbbi/biyolojik tanı değildir. Her metrik için kaynak dağılımının %10–%90 aralığı kullanılır: sıfır aykırı `normal`, bir aykırı `izle`, iki veya fazlası `dikkat`.
 
 ## Mimari

@@ -7,6 +7,11 @@ from typing import Any, Sequence
 
 import pandas as pd
 
+try:  # Hugging Face ZeroGPU provides this package; local installs need not.
+    import spaces
+except ImportError:  # pragma: no cover - expected in the root .venv.
+    spaces = None
+
 try:  # ``python les6/app.py`` from the Space root and ``import les6.app``.
     from .agent import BeehiveAgent
     from .database import HiveDatabase, cleanup_session, create_session_database
@@ -145,6 +150,16 @@ def build_demo():
         outputs = [chatbot, session_state, tool_logs, raw_result, sensor_table, sensor_plot]
         send.click(chat_message, inputs=inputs, outputs=outputs, api_name="chat")
         message.submit(chat_message, inputs=inputs, outputs=outputs, api_name="chat_submit")
+        if spaces is not None:
+            # ZeroGPU startup checks require one bound @spaces.GPU function.
+            # The actual chat path stays CPU-only and calls the remote Router.
+            @spaces.GPU(duration=1)
+            def _zerogpu_startup_probe() -> str:
+                """ZeroGPU discovery no-op; never handles a chat request."""
+
+                return ""
+
+            gr.Button(visible=False).click(_zerogpu_startup_probe, outputs=[])
     # Gradio 6.20 moved CSS from Blocks construction to launch(). Keep the
     # string on the demo for callers that launch it themselves.
     demo._les6_css = APP_CSS

@@ -19,3 +19,12 @@ def test_ui_has_one_explicit_send_button_and_enter_submission():
     assert "submit_btn=" not in source
     assert "send.click(" in source
     assert "message.submit(" in source
+
+
+def test_spaces_is_optional_and_zero_gpu_probe_is_conditional():
+    from odev2_beehive_assistant import app
+
+    assert app.spaces is None or hasattr(app.spaces, "GPU")
+    source = inspect.getsource(app.build_demo)
+    assert "if spaces is not None" in source
+    assert "@spaces.GPU" in source
