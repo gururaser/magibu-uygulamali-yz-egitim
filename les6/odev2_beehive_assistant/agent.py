@@ -3,15 +3,16 @@
 from __future__ import annotations
 
 import json
+import logging
 import time
 from typing import Any, Mapping, Sequence
 
 try:
     from .llm import HFRouterClient
-    from .tools import HiveTools, TOOL_SCHEMAS
+    from .tools import HiveTools, STATES, TOOL_SCHEMAS
 except ImportError:  # pragma: no cover - direct execution from les6/.
     from llm import HFRouterClient
-    from tools import HiveTools, TOOL_SCHEMAS
+    from tools import HiveTools, STATES, TOOL_SCHEMAS
 
 SYSTEM_PROMPT = """Sen Arı Kovanı Sağlık Asistanısın. Türkçe ve ölçülü yanıt ver.
 Kovan bilgisi, sensör ölçümü veya saha kontrolü hakkında herhangi bir sonuç
@@ -26,6 +27,37 @@ MAX_USER_MESSAGE_CHARS = 2_000
 MAX_HISTORY_MESSAGES = 20
 MAX_HISTORY_CONTENT_CHARS = 2_000
 MAX_TOOL_ROUNDS = 4
+TOOL_CALL_LOGGER = logging.getLogger("les6.agent.tool_calls")
+
+
+def _validated_log_arguments(name: str, arguments: Mapping[str, Any]) -> dict[str, Any]:
+    """Keep only type/range-validated public-tool arguments for server logs."""
+
+    if name == "list_hives":
+        status = arguments.get("status")
+        return {"status": status} if status in STATES else {}
+    if name == "get_hive_details":
+        result: dict[str, Any] = {}
+        if isinstance(arguments.get("hive_id"), str):
+            result["hive_id"] = arguments["hive_id"]
+        limit = arguments.get("reading_limit", 24)
+        if isinstance(limit, int) and not isinstance(limit, bool) and 1 <= limit <= 1000:
+            result["reading_limit"] = limit
+        return result
+    if name == "record_inspection":
+        result = {}
+        if isinstance(arguments.get("hive_id"), str):
+            result["hive_id"] = arguments["hive_id"]
+        if isinstance(arguments.get("queen_seen"), bool):
+            result["queen_seen"] = arguments["queen_seen"]
+        count = arguments.get("varroa_count")
+        if isinstance(count, int) and not isinstance(count, bool) and 0 <= count <= 1000:
+            result["varroa_count"] = count
+        notes = arguments.get("notes")
+        if isinstance(notes, str) and len(notes) <= 500:
+            result["notes"] = notes
+        return result
+    return {}
 
 
 def _message_dict(message: Any) -> dict[str, Any]:
@@ -140,13 +172,27 @@ class BeehiveAgent:
                         result = {"error": {"code": "DATABASE_ERROR", "message": "Tool işlemi tamamlanamadı."}}
                 elapsed_ms = round((time.perf_counter() - started) * 1000, 2)
                 last_result = result
+                result_json = json.dumps(result, ensure_ascii=False, separators=(",", ":"))
+                TOOL_CALL_LOGGER.info(
+                    json.dumps(
+                        {
+                            "event": "tool_call",
+                            "tool_name": name,
+                            "arguments": _validated_log_arguments(name, args),
+                            "result_json": result_json,
+                            "duration_ms": elapsed_ms,
+                        },
+                        ensure_ascii=False,
+                        separators=(",", ":"),
+                    )
+                )
                 logs.append(
                     {
                         "id": call_id,
                         "name": name,
                         "arguments": args,
                         "result": result,
-                        "raw_result": json.dumps(result, ensure_ascii=False),
+                        "raw_result": result_json,
                         "duration_ms": elapsed_ms,
                     }
                 )

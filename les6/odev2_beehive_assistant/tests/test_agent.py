@@ -1,3 +1,6 @@
+import json
+import logging
+
 from odev2_beehive_assistant.agent import (
     MAX_HISTORY_CONTENT_CHARS,
     MAX_HISTORY_MESSAGES,
@@ -32,6 +35,26 @@ def test_agent_runs_tool_call_db_result_and_final_response(tmp_path):
     assert result["reply"] == "Altı kovanı inceledim."
     assert result["tool_logs"][0]["name"] == "list_hives"
     assert result["tool_logs"][0]["result"]["hives"]
+    db.close()
+
+
+def test_each_tool_call_emits_minimal_structured_server_log(tmp_path, caplog):
+    db = create_session_database(tmp_path / "session")
+    with caplog.at_level(logging.INFO, logger="les6.agent.tool_calls"):
+        result = BeehiveAgent(db, client=FakeClient()).respond("Kovanları listele")
+    records = [record for record in caplog.records if record.name == "les6.agent.tool_calls"]
+    assert len(records) == 1
+    event = json.loads(records[0].getMessage())
+    assert event["event"] == "tool_call"
+    assert event["tool_name"] == "list_hives"
+    assert event["arguments"] == {}
+    assert json.loads(event["result_json"])["hives"]
+    assert isinstance(event["duration_ms"], (int, float))
+    serialized = records[0].getMessage()
+    assert "HF_TOKEN" not in serialized
+    assert "system" not in serialized.lower()
+    assert "messages" not in serialized
+    assert result["tool_logs"]
     db.close()
 
 
