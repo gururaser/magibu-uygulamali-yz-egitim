@@ -9,7 +9,7 @@ MODEL_ID = "deepseek-ai/DeepSeek-V4-Flash:fireworks-ai"
 ROUTER_BASE_URL = "https://router.huggingface.co/v1"
 REQUEST_TIMEOUT_SECONDS = 30.0
 MAX_RETRIES = 2
-MAX_COMPLETION_TOKENS = 1024
+MAX_COMPLETION_TOKENS = 4096
 
 
 def _read_attr(value: Any, name: str, default: Any = None) -> Any:

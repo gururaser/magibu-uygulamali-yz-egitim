@@ -16,7 +16,7 @@ class FakeSDK:
 
 
 def test_router_request_has_finite_retry_timeout_and_completion_cap():
-    assert MAX_COMPLETION_TOKENS == 1024
+    assert MAX_COMPLETION_TOKENS == 4096
     sdk = FakeSDK()
     result = HFRouterClient(client=sdk, max_tokens=MAX_COMPLETION_TOKENS * 5).complete(
         [{"role": "user", "content": "merhaba"}], [], tool_choice="required"
