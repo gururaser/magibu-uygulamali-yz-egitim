@@ -7,6 +7,7 @@ from odev2_beehive_assistant.agent import (
     MAX_TOOL_ROUNDS,
     MAX_USER_MESSAGE_CHARS,
     BeehiveAgent,
+    SYSTEM_PROMPT,
 )
 from odev2_beehive_assistant.database import create_session_database
 
@@ -40,9 +41,21 @@ def test_agent_runs_tool_call_db_result_and_final_response(tmp_path):
 
 def test_each_tool_call_emits_minimal_structured_server_log(tmp_path, caplog):
     db = create_session_database(tmp_path / "session")
-    with caplog.at_level(logging.INFO, logger="les6.agent.tool_calls"):
-        result = BeehiveAgent(db, client=FakeClient()).respond("Kovanları listele")
-    records = [record for record in caplog.records if record.name == "les6.agent.tool_calls"]
+    captured = []
+
+    class CaptureHandler(logging.Handler):
+        def emit(self, record):
+            captured.append(record)
+
+    handler = CaptureHandler()
+    logger = logging.getLogger("les6.agent.tool_calls")
+    logger.addHandler(handler)
+    try:
+        with caplog.at_level(logging.INFO, logger="les6.agent.tool_calls"):
+            result = BeehiveAgent(db, client=FakeClient()).respond("Kovanları listele")
+    finally:
+        logger.removeHandler(handler)
+    records = captured
     assert len(records) == 1
     event = json.loads(records[0].getMessage())
     assert event["event"] == "tool_call"
@@ -56,6 +69,21 @@ def test_each_tool_call_emits_minimal_structured_server_log(tmp_path, caplog):
     assert "messages" not in serialized
     assert result["tool_logs"]
     db.close()
+
+
+def test_system_prompt_requires_exact_tool_fact_grounding():
+    assert "yalnızca araç sonuçlarında açıkça bulunan" in SYSTEM_PROMPT
+    assert "niteliksel" in SYSTEM_PROMPT
+    assert "varroa" in SYSTEM_PROMPT.casefold()
+
+
+def test_tool_logger_has_one_info_stream_handler_without_propagation():
+    from odev2_beehive_assistant.agent import TOOL_CALL_LOGGER
+
+    marked = [handler for handler in TOOL_CALL_LOGGER.handlers if getattr(handler, "_les6_tool_handler", False)]
+    assert TOOL_CALL_LOGGER.level == logging.INFO
+    assert len(marked) == 1
+    assert TOOL_CALL_LOGGER.propagate is False
 
 
 class NoToolClient:

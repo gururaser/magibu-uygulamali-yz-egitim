@@ -19,7 +19,9 @@ Kovan bilgisi, sensör ölçümü veya saha kontrolü hakkında herhangi bir son
 vermeden önce uygun aracı kullan. Araç sonucu hata döndürürse bilgi uydurma;
 hata kodunu ve kullanıcıya yapılacak düzeltmeyi açıkla. Durum etiketleri yalnızca
 ölçümlerin kaynak dağılımındaki %10-%90 aralığına dayalı istatistiksel özetlerdir;
-tıbbi ya da biyolojik tanı değildir."""
+tıbbi ya da biyolojik tanı değildir. Nihai yanıtta yalnızca araç sonuçlarında açıkça bulunan sayıları, alanları ve durum etiketlerini aynen aktar; araçta
+bulunmayan niteliksel seviye, risk veya biyolojik yorum icat etme. Özellikle
+varroa sayısını "düşük" ya da "yüksek" diye sınıflandırma."""
 
 # Public Space boundary/cost limits. Keep these constants in one place so the
 # UI, tests, and README describe the same budget.
@@ -28,6 +30,21 @@ MAX_HISTORY_MESSAGES = 20
 MAX_HISTORY_CONTENT_CHARS = 2_000
 MAX_TOOL_ROUNDS = 4
 TOOL_CALL_LOGGER = logging.getLogger("les6.agent.tool_calls")
+
+
+def _configure_tool_logger() -> None:
+    """Send compact tool events to stderr once, including on module reload."""
+
+    TOOL_CALL_LOGGER.setLevel(logging.INFO)
+    TOOL_CALL_LOGGER.propagate = False
+    if not any(getattr(handler, "_les6_tool_handler", False) for handler in TOOL_CALL_LOGGER.handlers):
+        handler = logging.StreamHandler()
+        handler._les6_tool_handler = True
+        handler.setFormatter(logging.Formatter("%(message)s"))
+        TOOL_CALL_LOGGER.addHandler(handler)
+
+
+_configure_tool_logger()
 
 
 def _validated_log_arguments(name: str, arguments: Mapping[str, Any]) -> dict[str, Any]:
